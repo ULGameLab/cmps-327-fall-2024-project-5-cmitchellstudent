@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 using MapGen;
 
 public class Node
@@ -33,11 +34,12 @@ public class PathFinder
         goalTile = null;
     }
 
-    // TODO: Find the path based on A-Star Algorithm
+    // DONE: Find the path based on A-Star Algorithm
     public Queue<Tile> FindPathAStar(Tile start, Tile goal)
     {
         TODOList = new List<Node>();
         DoneList = new List<Node>();
+        List<Tile> DoneTiles = new List<Tile>();
 
         TODOList.Add(new Node(start, 0, null, 0));
         goalTile = goal;
@@ -47,18 +49,29 @@ public class PathFinder
             TODOList.Sort((x, y) => (x.priority.CompareTo(y.priority))); // This will keep the TODO List sorted based on the F cost
             Node current = TODOList[0];
             DoneList.Add(current);
+            DoneTiles.Add(current.tile);
             TODOList.RemoveAt(0);
 
             if (current.tile == goal)
             {
                 return RetracePath(current);  // Returns the Path if goal is reached
             }
-
+            
             // for each neighboring tile calculate the costs
             // You just need to fill code inside this foreach only
+            
             foreach (Tile nextTile in current.tile.Adjacents)
             {
-                
+                if (DoneTiles.Contains(nextTile))
+                {
+                    continue;
+                }
+                int xDistance = Math.Abs(start.indexX - nextTile.indexX);
+                int yDistance = Math.Abs(start.indexY - nextTile.indexY);
+                int remaining = Math.Abs(xDistance - yDistance);
+                double gCost = 14 * Math.Min(xDistance, yDistance) + 10 * remaining;
+                double hCost = HeuristicsDistance(nextTile, goal);
+                TODOList.Add(new Node(nextTile, gCost+hCost, current, gCost));
             }
         }
         return new Queue<Tile>(); // Returns an empty Path if no path is found
@@ -67,10 +80,11 @@ public class PathFinder
     // TODO: Find the path based on A-Star Algorithm
     // In this case avoid a path passing near an enemy tile
     // BONUS TASK (Required the for Honors Contract Students)
-    public Queue<Tile> FindPathAStarEvadeEnemy(Tile start, Tile goal)
+    public Queue<Tile> FindPathAStarEvadeEnemy(Tile start, Tile goal, List<Enemy> enemyList)
     {
         TODOList = new List<Node>();
         DoneList = new List<Node>();
+        List<Tile> DoneTiles = new List<Tile>();
 
         TODOList.Add(new Node(start, 0, null, 0));
         goalTile = goal;
@@ -80,6 +94,7 @@ public class PathFinder
             TODOList.Sort((x, y) => (x.priority.CompareTo(y.priority))); // This will keep the TODO List sorted
             Node current = TODOList[0];
             DoneList.Add(current);
+            DoneTiles.Add(current.tile);
             TODOList.RemoveAt(0);
 
             if (current.tile == goal)
@@ -89,10 +104,33 @@ public class PathFinder
 
             // for each neighboring tile calculate the costs
             // You just need to fill code inside this foreach only
-            // Just increase the F cost of the enemy tile and the tiles around it by a certain ammount (say 30)
+            // Just increase the F cost of the enemy tile and the tiles around it by a certain amount (say 30)
             foreach (Tile nextTile in current.tile.Adjacents)
             {
+                if (DoneTiles.Contains(nextTile))
+                {
+                    continue;
+                }
+                double enemyCost = 0;
+                foreach (var enemy in enemyList)
+                {
+                    if (nextTile == enemy.currentTile)
+                    {
+                        enemyCost = 100;
+                    }
 
+                    if (enemy.currentTile.Adjacents.Contains(nextTile))
+                    {
+                        enemyCost = 80;
+                    }
+                }
+                int xDistance = Math.Abs(start.indexX - nextTile.indexX);
+                int yDistance = Math.Abs(start.indexY - nextTile.indexY);
+                int remaining = Math.Abs(xDistance - yDistance);
+                double gCost = 14 * Math.Min(xDistance, yDistance) + 10 * remaining;
+                double hCost = HeuristicsDistance(nextTile, goal);
+                
+                TODOList.Add(new Node(nextTile, gCost+hCost+enemyCost, current, gCost));
             }
         }
         return new Queue<Tile>(); // Returns an empty Path

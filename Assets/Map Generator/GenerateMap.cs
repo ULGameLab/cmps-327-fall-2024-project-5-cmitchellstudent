@@ -44,7 +44,7 @@ public class GenerateMap : MonoBehaviour
                 state = MapState.GENERATED;
                 break;
             case MapState.GENERATED:
-                if(Input.GetKey(KeyCode.Space))
+                if(Input.GetKeyDown(KeyCode.Space))
                 {
                     foreach (Transform child in transform)
                     {
